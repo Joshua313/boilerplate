@@ -1,0 +1,46 @@
+//library
+import express from "express";
+import dotEnv from "dotenv";
+import session from "express-session";
+import mongoStore from "connect-mongo";
+import cors from "cors";
+import helmet from "helmet";
+
+dotEnv.config();
+
+//file import
+import connectDB from "./configs/db.js";
+import userRoute from "./routes/userRoute.js";
+import limiterConfig from "./configs/limiter.js";
+
+const port = process.env.PORT;
+const app = express();
+
+//middleware
+app.use(limiterConfig);
+app.use(helmet());
+app.use(cors());
+app.use(express.json());
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 1000 * 60 * 60, //1hr
+    },
+    rolling: true,
+    store: mongoStore.create({
+      mongoUrl: process.env.MONGO_URI,
+    }),
+  }),
+);
+
+//routes
+app.use("/api/auth", userRoute);
+
+//database connection
+connectDB();
+app.listen(port, () => {
+  console.log(`App is running at http://localhost:${port}`);
+});
